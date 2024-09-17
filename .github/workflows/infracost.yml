@@ -58,8 +58,8 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  estimate-cost:
-    name: "Estimate Cost"
+  Estimate-Cost:
+    name: "Estimate Cost and Slack Notification"
     needs: terraform-plan
     runs-on: ubuntu-latest
 
@@ -81,15 +81,12 @@ jobs:
       - name: Set cost estimates as environment variables
         id: set_costs
         run: |
-          # Extract the hourly and monthly cost estimates
           HOURLY_COST=$(jq -r '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
           MONTHLY_COST=$(jq -r '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
           
-          # Convert to daily and yearly costs, using bc for floating-point arithmetic
           DAILY_COST=$(echo "$HOURLY_COST * 24" | bc)
           YEARLY_COST=$(echo "$MONTHLY_COST * 12" | bc)
 
-          # Ensure values are not null or empty, fallback to "0"
           HOURLY_COST=${HOURLY_COST:-"0"}
           MONTHLY_COST=${MONTHLY_COST:-"0"}
           DAILY_COST=${DAILY_COST:-"0"}
@@ -100,18 +97,11 @@ jobs:
           echo "MONTHLY_COST=$MONTHLY_COST" >> $GITHUB_ENV
           echo "YEARLY_COST=$YEARLY_COST" >> $GITHUB_ENV
 
-          # Logging the values for debugging
-          echo "Hourly Cost: $HOURLY_COST"
-          echo "Daily Cost: $DAILY_COST"
-          echo "Monthly Cost: $MONTHLY_COST"
-          echo "Yearly Cost: $YEARLY_COST"
+      - name: Post Infracost result to PR
+        uses: infracost/actions/comment@v1
+        with:
+          path: infracost-out.json
 
-  send-cost-to-slack:
-    name: "Send Cost to Slack"
-    needs: estimate-cost
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Notify Slack about cost estimation
         if: success()
         uses: wearerequired/slack-messaging-action@v2
@@ -124,22 +114,22 @@ jobs:
               "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
             }
 
-  # terraform-apply:
-  #   name: "Terraform Apply"
-  #   needs: terraform-plan
-  #   runs-on: ubuntu-latest
-  #   if: false # Comment this out to disable the Terraform apply step
+  terraform-apply:
+    name: "Terraform Apply"
+    needs: Estimate-Cost
+    runs-on: ubuntu-latest
+    if: needs.Estimate-Cost.outputs.should_apply == 'false'
+    
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-  #   steps:
-  #     - name: Checkout source code
-  #       uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v2
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
 
-  #     - name: Terraform init
-  #       id: init
-  #       run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
-
-  #     - name: Terraform apply
-  #       run: terraform apply -auto-approve
+      - name: Terraform apply
+        run: terraform apply -auto-approve
