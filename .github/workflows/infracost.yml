@@ -106,6 +106,24 @@ jobs:
           echo "Monthly Cost: $MONTHLY_COST"
           echo "Yearly Cost: $YEARLY_COST"
 
+      - name: Post Infracost result to PR
+        uses: infracost/actions/comment@v1
+        with:
+          path: infracost-out.json
+
+      - name: Set apply condition
+        id: apply_condition
+        run: |
+          # Define your cost threshold
+          COST_THRESHOLD=100 # example threshold in USD
+
+          # Check if the monthly cost exceeds the threshold
+          if [ "$(echo "$MONTHLY_COST > $COST_THRESHOLD" | bc)" -eq 1 ]; then
+            echo "should_apply=false" >> $GITHUB_ENV
+          else
+            echo "should_apply=true" >> $GITHUB_ENV
+          fi
+
   slack-notification:
     name: "Send Cost to Slack"
     needs: infracost-estimate
@@ -125,21 +143,21 @@ jobs:
             }
 
   terraform-apply:
-     name: "Terraform Apply"
-     needs: terraform-plan
-     runs-on: ubuntu-latest
-     defaults:
-       run:
-        shell: bash
-        working-directory: ./terraform
+    name: "Terraform Apply"
+    needs: infracost-estimate
+    runs-on: ubuntu-latest
+    if: env.should_apply == 'false'
 
-     steps:
-       - name: Checkout source code
-         uses: actions/checkout@v4
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-  #     - name: Setup Terraform
-  #       uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
 
-  #     - name: Terraform apply
-  #       id: apply
-  #       run: terraform apply -auto-approve
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve
