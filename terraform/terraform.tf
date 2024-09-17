@@ -29,7 +29,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "weather-app-gitops-bucket"
+    bucket = "infrastructure-cost"
     key    = "terraform.tfstate"
     region = "us-west-2"
   }

@@ -1,63 +1,101 @@
-name: "Infracost CI with Terraform"
+name: infracost with slack
+
 on:
   push:
     branches:
       - main
-      - stage
     paths:  
       - terraform/**
 
+  pull_request:
+    branches:
+      - main
+    paths:
+      - terraform/**
+
+env:
+  # Credentials for deployment to AWS
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # S3 bucket for the Terraform state
+  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
+  AWS_REGION: us-west-2
+
 jobs:
-  infracost:
+  terraform-plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform init
+        id: init
+        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+      - name: Terraform format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform validate
+        id: validate
+        run: terraform validate
+
+      - name: Terraform plan and output to JSON
+        id: plan
+        run: |
+          terraform plan -no-color -input=false -out=tfplan.binary
+          terraform show -json tfplan.binary > tfplan.json
+
+      - name: Save Terraform plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-json
+          path: terraform/tfplan.json
+
+  slack-notification:
+    name: "Slack Notification"
+    needs: terraform-plan
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-json
+          path: terraform/tfplan.json
 
-      # Terraform Init
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v1
-
-      # Initialize Terraform
-      - name: Terraform Init
-        run: terraform init
-
-      # Run Terraform Plan
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan.binary
-
-      # Convert Terraform plan to JSON
-      - name: Terraform Show (JSON)
-        run: terraform show -json tfplan.binary > plan.json
-
-      # Install Infracost
       - name: Install Infracost
         run: curl -sSfL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh
 
-      # Setup Infracost API key
       - name: Setup Infracost API key
         run: infracost configure set api_key ${{ secrets.INFRACOST_API_KEY }}
 
-      # Run Infracost to estimate cost
       - name: Run Infracost breakdown
-        run: infracost breakdown --path plan.json --format json --out-file infracost-out.json
+        run: infracost breakdown --path terraform/tfplan.json --format json --out-file infracost-out.json
 
-      # Post Infracost result to PR
-      - name: Post comment to PR
+      - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
         with:
           path: infracost-out.json
 
-      # Send Slack notification
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
             {
               "channel": "#your-slack-channel",
-              "text": "Infracost estimate complete! Cost estimate: $(cat infracost-out.json | jq '.projects[0].diff.totalMonthlyCost') per month"
+              "text": "Terraform plan and cost estimate complete! Check the cost estimate: $(cat infracost-out.json | jq '.projects[0].diff.totalMonthlyCost') per month"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+
