@@ -82,8 +82,8 @@ jobs:
         id: set_costs
         run: |
           # Extract the hourly and monthly cost estimates
-          HOURLY_COST=$(jq '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
-          MONTHLY_COST=$(jq '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
+          HOURLY_COST=$(jq -r '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
+          MONTHLY_COST=$(jq -r '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
           
           # Convert to daily and yearly costs, using bc for floating-point arithmetic
           DAILY_COST=$(echo "$HOURLY_COST * 24" | bc)
@@ -120,5 +120,5 @@ jobs:
           payload: >-
             {
               "icon_emoji": ":moneybag:",
-              "text": Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD
+              "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
             }
