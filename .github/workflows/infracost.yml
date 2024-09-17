@@ -12,9 +12,11 @@ jobs:
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
-    - name: Send test message to Slack
+    - name: Send Slack notification with job status
       uses: act10ns/slack@v2
       with:
         channel: '#infrastructure-budgets'
-        text: 'Test message from GitHub Actions workflow!'
-      if: always()
+        status: ${{ job.status }}  # This adds the job status (success, failure, etc.)
+        steps: ${{ toJson(steps) }}
+        text: 'GitHub Actions job completed with status: ${{ job.status }}'
+      if: always() 
