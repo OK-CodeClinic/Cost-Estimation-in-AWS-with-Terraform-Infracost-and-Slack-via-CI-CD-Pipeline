@@ -89,15 +89,17 @@ jobs:
         with:
           path: infracost-out.json
 
-      - name: Send Slack notification
-        uses: slackapi/slack-github-action@v1.23.0
+      - name: Notify Slack about deployment success
+        if: success() # This triggers the action only if the previous steps are successful.
+        uses: wearerequired/slack-messaging-action@v2
         with:
-          payload: |
-            {
-              "channel": C07MH31LJ9L,
-              "text": "Terraform plan and cost estimate complete! Check the cost estimate: $(cat infracost-out.json | jq '.projects[0].diff.totalMonthlyCost') per month"
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          bot_token: ${{ secrets.SLACK_BOT_TOKEN }} # The Slack bot token stored in GitHub Secrets
+          channel: infrastructure-budgets # Your Slack channel ID (use the actual channel ID without quotes)
+          payload: >-
+              {
+                "icon_emoji": ":rocket:",
+                "text": "Cost Estimation Successful "
+              }
+        
 
 
