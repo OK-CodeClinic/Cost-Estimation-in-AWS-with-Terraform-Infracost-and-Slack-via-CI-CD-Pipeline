@@ -1,4 +1,4 @@
-name: infracost with slack
+name: infracost-with-slack
 
 on:
   push:
@@ -58,14 +58,20 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  Estimate-Cost:
-    name: "Infracost and Slack Notification"
+  cost-estimation:
+    name: "Cost Estimation"
     needs: terraform-plan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-json
+          path: ./terraform/tfplan.json
 
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
@@ -85,7 +91,7 @@ jobs:
           HOURLY_COST=$(jq -r '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
           MONTHLY_COST=$(jq -r '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
           
-          # Convert to daily and yearly costs, using bc for floating-point arithmetic
+          # Convert to daily and yearly costs
           DAILY_COST=$(echo "$HOURLY_COST * 24" | bc)
           YEARLY_COST=$(echo "$MONTHLY_COST * 12" | bc)
 
@@ -106,13 +112,16 @@ jobs:
           echo "Monthly Cost: $MONTHLY_COST"
           echo "Yearly Cost: $YEARLY_COST"
 
-      - name: Post Infracost result to PR
-        uses: infracost/actions/comment@v1
-        with:
-          path: infracost-out.json
+  send-cost-to-slack:
+    name: "Send Cost to Slack"
+    needs: cost-estimation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
       - name: Notify Slack about cost estimation
-        if: success()
         uses: wearerequired/slack-messaging-action@v2
         with:
           bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
