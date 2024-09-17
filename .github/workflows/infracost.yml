@@ -63,8 +63,8 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  slack-notification:
-    name: "Slack Notification"
+  infracost-notification:
+    name: "Infracost and Slack Notification"
     needs: terraform-plan
     runs-on: ubuntu-latest
 
@@ -84,22 +84,25 @@ jobs:
       - name: Run Infracost breakdown
         run: infracost breakdown --path terraform/tfplan.json --format json --out-file infracost-out.json
 
+      - name: Extract Cost Estimate
+        id: extract_cost
+        run: |
+          TOTAL_COST=$(cat infracost-out.json | jq -r '.projects[0].diff.totalMonthlyCost')
+          echo "TOTAL_COST=$TOTAL_COST" >> $GITHUB_ENV
+
       - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
         with:
           path: infracost-out.json
 
-      - name: Notify Slack about deployment success
+      - name: Notify Slack about cost estimation
         if: success() # This triggers the action only if the previous steps are successful.
         uses: wearerequired/slack-messaging-action@v2
         with:
           bot_token: ${{ secrets.SLACK_BOT_TOKEN }} # The Slack bot token stored in GitHub Secrets
           channel: infrastructure-budgets # Your Slack channel ID (use the actual channel ID without quotes)
           payload: >-
-              {
-                "icon_emoji": ":rocket:",
-                "text": "Cost Estimation Successful "
-              }
-        
-
-
+            {
+              "icon_emoji": ":rocket:",
+              "text": "Terraform plan and cost estimate complete! Check the cost estimate: ${{ env.TOTAL_COST }} per month"
+            }
