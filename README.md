@@ -3,6 +3,9 @@
 ## Description
 This workflow integrates Terraform infrastructure management with cost estimation using Infracost and automates notifications via Slack. It leverages GitHub Actions to streamline infrastructure-as-code (IaC) practices by running Terraform plans, validating configurations, and providing real-time cost visibility directly in a Slack channel as a message. The pipeline is designed to conditionally apply infrastructure changes based on cost thresholds, ensuring operational efficiency and cost governance in CI/CD workflows.
 
+![infra (2)](https://github.com/user-attachments/assets/2f02a4bf-f914-453f-950f-7109eda7bd69)
+
+
 ## Prerequisites
 
 Before running the pipeline, ensure the following are set up:
