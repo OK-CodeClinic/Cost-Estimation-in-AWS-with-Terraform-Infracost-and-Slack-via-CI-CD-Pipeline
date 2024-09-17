@@ -1,22 +1,63 @@
-name: cicd-workflow with slack integration
-
+name: "Infracost CI with Terraform"
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+      - stage
+    paths:  
+      - terraform/**
 
 jobs:
-  send-slack-notification:
+  infracost:
     runs-on: ubuntu-latest
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
     steps:
-    - name: Send Slack notification with job status
-      uses: act10ns/slack@v2
-      with:
-        channel: '#infrastructure-budgets'
-        status: ${{ job.status }}  # This adds the job status (success, failure, etc.)
-        steps: ${{ toJson(steps) }}
-        text: 'GitHub Actions job completed with status: ${{ job.status }}'
-      if: always() 
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Terraform Init
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Run Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan.binary
+
+      # Convert Terraform plan to JSON
+      - name: Terraform Show (JSON)
+        run: terraform show -json tfplan.binary > plan.json
+
+      # Install Infracost
+      - name: Install Infracost
+        run: curl -sSfL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh
+
+      # Setup Infracost API key
+      - name: Setup Infracost API key
+        run: infracost configure set api_key ${{ secrets.INFRACOST_API_KEY }}
+
+      # Run Infracost to estimate cost
+      - name: Run Infracost breakdown
+        run: infracost breakdown --path plan.json --format json --out-file infracost-out.json
+
+      # Post Infracost result to PR
+      - name: Post comment to PR
+        uses: infracost/actions/comment@v1
+        with:
+          path: infracost-out.json
+
+      # Send Slack notification
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "channel": "#your-slack-channel",
+              "text": "Infracost estimate complete! Cost estimate: $(cat infracost-out.json | jq '.projects[0].diff.totalMonthlyCost') per month"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
