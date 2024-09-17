@@ -1,0 +1,20 @@
+name: cicd-workflow with slack integration
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  send-slack-notification:
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+    - name: Send test message to Slack
+      uses: act10ns/slack@v2
+      with:
+        channel: '#infrastructure-budgets'
+        text: 'Test message from GitHub Actions workflow!'
+      if: always()
