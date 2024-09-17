@@ -1,4 +1,4 @@
-name: infracost-with-slack
+name: infracost with slack
 
 on:
   push:
@@ -58,20 +58,14 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  cost-estimation:
-    name: "Cost Estimation"
+  estimate-cost:
+    name: "Estimate Cost"
     needs: terraform-plan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-
-      - name: Download Terraform plan
-        uses: actions/download-artifact@v3
-        with:
-          name: tfplan-json
-          path: ./terraform/tfplan.json
 
       - name: Setup Infracost
         uses: infracost/actions/setup@v2
@@ -91,7 +85,7 @@ jobs:
           HOURLY_COST=$(jq -r '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
           MONTHLY_COST=$(jq -r '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
           
-          # Convert to daily and yearly costs
+          # Convert to daily and yearly costs, using bc for floating-point arithmetic
           DAILY_COST=$(echo "$HOURLY_COST * 24" | bc)
           YEARLY_COST=$(echo "$MONTHLY_COST * 12" | bc)
 
@@ -114,14 +108,12 @@ jobs:
 
   send-cost-to-slack:
     name: "Send Cost to Slack"
-    needs: cost-estimation
+    needs: estimate-cost
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
       - name: Notify Slack about cost estimation
+        if: success()
         uses: wearerequired/slack-messaging-action@v2
         with:
           bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -131,3 +123,23 @@ jobs:
               "icon_emoji": ":moneybag:",
               "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
             }
+
+  # terraform-apply:
+  #   name: "Terraform Apply"
+  #   needs: terraform-plan
+  #   runs-on: ubuntu-latest
+  #   if: false # Comment this out to disable the Terraform apply step
+
+  #   steps:
+  #     - name: Checkout source code
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup Terraform
+  #       uses: hashicorp/setup-terraform@v2
+
+  #     - name: Terraform init
+  #       id: init
+  #       run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+
+  #     - name: Terraform apply
+  #       run: terraform apply -auto-approve
