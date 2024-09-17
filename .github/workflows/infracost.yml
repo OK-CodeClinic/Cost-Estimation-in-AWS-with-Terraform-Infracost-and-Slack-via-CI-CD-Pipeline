@@ -58,8 +58,8 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  estimate-cost:
-    name: "Estimate Cost"
+  Estimate-Cost:
+    name: "Infracost and Slack Notification"
     needs: terraform-plan
     runs-on: ubuntu-latest
 
@@ -111,12 +111,6 @@ jobs:
         with:
           path: infracost-out.json
 
-  send-cost-to-slack:
-    name: "Send Cost to Slack"
-    needs: estimate-cost
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Notify Slack about cost estimation
         if: success()
         uses: wearerequired/slack-messaging-action@v2
@@ -128,23 +122,3 @@ jobs:
               "icon_emoji": ":moneybag:",
               "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
             }
-
-  terraform-apply:
-    name: "Terraform Apply"
-    needs: terraform-plan
-    runs-on: ubuntu-latest
-    if: false
-
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
-      - name: Terraform init
-        id: init
-        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
-
-      - name: Terraform apply
-        run: terraform apply -auto-approve
