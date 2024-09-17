@@ -78,6 +78,10 @@ jobs:
       - name: Inspect Infracost output
         run: cat infracost-out.json
 
+      - name: Set JSON content as environment variable
+        id: set_json_content
+        run: echo "INFRACOST_JSON_CONTENT=$(cat infracost-out.json | jq -Rs .)" >> $GITHUB_ENV
+
       - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
         with:
@@ -92,5 +96,5 @@ jobs:
           payload: >-
             {
               "icon_emoji": ":rocket:",
-              "text": "Terraform plan and cost estimate complete! Here are the details:\n\n```\n$(cat infracost-out.json)\n```"
+              "text": "Terraform plan and cost estimate complete! Here are the details:\n\n```\n${{ env.INFRACOST_JSON_CONTENT }}\n```"
             }
