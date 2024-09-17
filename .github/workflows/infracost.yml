@@ -58,12 +58,10 @@ jobs:
           name: tfplan-json
           path: terraform/tfplan.json
 
-  infracost-estimate:
-    name: "Estimating Cost"
+  estimate-cost:
+    name: "Estimate Cost"
     needs: terraform-plan
     runs-on: ubuntu-latest
-    outputs:
-      should_apply: ${{ steps.set_costs.outputs.should_apply }}
 
     steps:
       - name: Checkout source code
@@ -108,26 +106,14 @@ jobs:
           echo "Monthly Cost: $MONTHLY_COST"
           echo "Yearly Cost: $YEARLY_COST"
 
-          # Define your cost threshold
-          COST_THRESHOLD=100 # example threshold in USD
-
-          # Check if the monthly cost exceeds the threshold
-          if [ "$(echo "$MONTHLY_COST > $COST_THRESHOLD" | bc)" -eq 1 ]; then
-            echo "should_apply=false" >> $GITHUB_ENV
-            echo "::set-output name=should_apply::false"
-          else
-            echo "should_apply=true" >> $GITHUB_ENV
-            echo "::set-output name=should_apply::true"
-          fi
-
       - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
         with:
           path: infracost-out.json
 
-  slack-notification:
+  send-cost-to-slack:
     name: "Send Cost to Slack"
-    needs: infracost-estimate
+    needs: estimate-cost
     runs-on: ubuntu-latest
 
     steps:
@@ -145,9 +131,9 @@ jobs:
 
   terraform-apply:
     name: "Terraform Apply"
-    needs: infracost-estimate
+    needs: terraform-plan
     runs-on: ubuntu-latest
-    if: needs.infracost-estimate.outputs.should_apply == 'fasle'
+    if: false
 
     steps:
       - name: Checkout source code
