@@ -82,26 +82,18 @@ jobs:
         id: set_costs
         run: |
           # Extract the hourly and monthly cost estimates
-          HOURLY_COST=$(jq '.projects[].breakdown.totalHourlyCost' infracost-out.json)
-          MONTHLY_COST=$(jq '.projects[].breakdown.totalMonthlyCost' infracost-out.json)
+          HOURLY_COST=$(jq '.projects[].breakdown.totalHourlyCost // 0' infracost-out.json)
+          MONTHLY_COST=$(jq '.projects[].breakdown.totalMonthlyCost // 0' infracost-out.json)
           
-          # Convert to daily and yearly costs
+          # Convert to daily and yearly costs, using bc for floating-point arithmetic
           DAILY_COST=$(echo "$HOURLY_COST * 24" | bc)
           YEARLY_COST=$(echo "$MONTHLY_COST * 12" | bc)
 
-          # Check if the cost data exists, otherwise default to zero
-          if [ -z "$HOURLY_COST" ]; then
-            HOURLY_COST="0"
-          fi
-          if [ -z "$MONTHLY_COST" ]; then
-            MONTHLY_COST="0"
-          fi
-          if [ -z "$DAILY_COST" ]; then
-            DAILY_COST="0"
-          fi
-          if [ -z "$YEARLY_COST" ]; then
-            YEARLY_COST="0"
-          fi
+          # Ensure values are not null or empty, fallback to "0"
+          HOURLY_COST=${HOURLY_COST:-"0"}
+          MONTHLY_COST=${MONTHLY_COST:-"0"}
+          DAILY_COST=${DAILY_COST:-"0"}
+          YEARLY_COST=${YEARLY_COST:-"0"}
 
           echo "HOURLY_COST=$HOURLY_COST" >> $GITHUB_ENV
           echo "DAILY_COST=$DAILY_COST" >> $GITHUB_ENV
@@ -126,7 +118,7 @@ jobs:
           bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: infrastructure-budgets
           payload: >-
-              {
-                "icon_emoji": ":moneybag:",
-                "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
-              }
+            {
+              "icon_emoji": ":moneybag:",
+              "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
+            }
