@@ -78,14 +78,13 @@ jobs:
       - name: Inspect Infracost output
         run: cat infracost-out.json
 
-      - name: Set JSON content as environment variable
-        id: set_json_content
+      - name: Set meaningful cost data as environment variable
+        id: set_meaningful_cost
         run: |
-          # Read and escape JSON content
-          JSON_CONTENT=$(cat infracost-out.json | jq -Rs .)
-          # Print the JSON content to ensure it's correctly formatted
-          echo "JSON_CONTENT=$JSON_CONTENT"
-          echo "INFRACOST_JSON_CONTENT=$JSON_CONTENT" >> $GITHUB_ENV
+          # Extract the total monthly cost difference
+          MEANINGFUL_CONTENT=$(jq '.projects[] | select(.diffTotalMonthlyCost != null) | .diffTotalMonthlyCost' infracost-out.json)
+          echo "MEANINGFUL_COST=$MEANINGFUL_CONTENT" >> $GITHUB_ENV
+          echo "Meaningful cost data extracted: $MEANINGFUL_CONTENT"
 
       - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
@@ -100,6 +99,6 @@ jobs:
           channel: infrastructure-budgets
           payload: >-
             {
-              "icon_emoji": ":rocket:",
-              "text": "Terraform plan and cost estimate complete! Here are the details:\n\n```json\n${{ env.INFRACOST_JSON_CONTENT }}\n```"
+              "icon_emoji": ":moneybag:",
+              "text": "Cost estimate summary:\n\n*Total Monthly Cost Difference:* `${{ env.MEANINGFUL_COST }}`"
             }
