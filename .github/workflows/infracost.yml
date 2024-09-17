@@ -67,8 +67,8 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Install Infracost
-        uses: infracost/actions/setup@v3
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
         with:
           api-key: ${{ secrets.INFRACOST_API_KEY }}
 
@@ -98,5 +98,5 @@ jobs:
           payload: >-
             {
               "icon_emoji": ":rocket:",
-              "text": "Terraform plan and cost estimate complete! The total cost is estimated at: ${{ env.TOTAL_COST }} per month"
+              "text": "Terraform plan and cost estimate complete! The total cost is estimated at: $ ${{ env.TOTAL_COST }} per month"
             }
