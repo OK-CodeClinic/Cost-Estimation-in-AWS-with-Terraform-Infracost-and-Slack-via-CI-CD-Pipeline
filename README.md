@@ -65,6 +65,9 @@ This job runs Infracost to estimate the cost of the infrastructure and sends a n
 - **Set cost estimates as environment variables**: Extract hourly, daily, monthly, and yearly costs
 - **Post Infracost result to PR**: Comment cost breakdown in the pull request
 
+![Screenshot (409)](https://github.com/user-attachments/assets/d3657cd4-60da-48ed-b390-9dff9305be66)
+
+
 ### 3. Slack Notification
 - **Notify Slack**: Send a Slack notification with cost estimates to the `infrastructure-budgets` channel
 
@@ -83,6 +86,9 @@ This job applies Terraform changes if only the cost estimation is acceptable. If
    - `BUCKET_TF_STATE`
    - `INFRACOST_API_KEY`
    - `SLACK_BOT_TOKEN`
+     
+![Screenshot (408)](https://github.com/user-attachments/assets/15a02cb0-84b2-452e-bdf6-037b833fee7a)
+
 
 2. Commit your Terraform configuration files in the `terraform/` directory.
 
@@ -92,6 +98,9 @@ This job applies Terraform changes if only the cost estimation is acceptable. If
 
 Cost estimation results are posted in the following locations:
 - Slack: Cost estimates sent to the `infrastructure-budgets` channel
+
+![Screenshot (404)](https://github.com/user-attachments/assets/e2537ef4-6b1d-428c-9610-b2323a4f39cc)
+
 
 ## License
 This project is licensed under the MIT License.
