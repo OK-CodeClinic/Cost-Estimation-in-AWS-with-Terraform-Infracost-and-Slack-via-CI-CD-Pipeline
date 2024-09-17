@@ -128,5 +128,5 @@ jobs:
           payload: >-
             {
               "icon_emoji": ":moneybag:",
-              "text": "Cost estimate summary:\n\n*Hourly Cost:* `${{ env.HOURLY_COST }} USD`\n*Daily Cost:* `${{ env.DAILY_COST }} USD`\n*Monthly Cost:* `${{ env.MONTHLY_COST }} USD`\n*Yearly Cost:* `${{ env.YEARLY_COST }} USD`"
+              "text": "Cost estimate summary:\n\n*Hourly Cost:* \"${{ env.HOURLY_COST }} USD\"\n*Daily Cost:* \"${{ env.DAILY_COST }} USD\"\n*Monthly Cost:* \"${{ env.MONTHLY_COST }} USD\"\n*Yearly Cost:* \"${{ env.YEARLY_COST }} USD\""
             }
