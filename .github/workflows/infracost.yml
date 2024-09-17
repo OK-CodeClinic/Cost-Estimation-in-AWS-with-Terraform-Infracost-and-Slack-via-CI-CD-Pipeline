@@ -94,7 +94,7 @@ jobs:
         with:
           payload: |
             {
-              "channel": "C07MH31LJ9L",
+              "channel": C07MH31LJ9L,
               "text": "Terraform plan and cost estimate complete! Check the cost estimate: $(cat infracost-out.json | jq '.projects[0].diff.totalMonthlyCost') per month"
             }
         env:
