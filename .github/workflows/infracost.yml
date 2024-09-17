@@ -126,7 +126,7 @@ jobs:
           bot_token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: infrastructure-budgets
           payload: >-
-            {
-              "icon_emoji": ":moneybag:",
-              "text": "Cost estimate summary:\n\n*Hourly Cost:* \"${{ env.HOURLY_COST }} USD\"\n*Daily Cost:* \"${{ env.DAILY_COST }} USD\"\n*Monthly Cost:* \"${{ env.MONTHLY_COST }} USD\"\n*Yearly Cost:* \"${{ env.YEARLY_COST }} USD\""
-            }
+              {
+                "icon_emoji": ":moneybag:",
+                "text": "Cost estimate summary:\n\n*Hourly Cost:* ${{ env.HOURLY_COST }} USD\n*Daily Cost:* ${{ env.DAILY_COST }} USD\n*Monthly Cost:* ${{ env.MONTHLY_COST }} USD\n*Yearly Cost:* ${{ env.YEARLY_COST }} USD"
+              }
