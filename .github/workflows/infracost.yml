@@ -83,6 +83,12 @@ jobs:
         run: |
           # Extract the total monthly cost difference
           MEANINGFUL_CONTENT=$(jq '.projects[] | select(.diffTotalMonthlyCost != null) | .diffTotalMonthlyCost' infracost-out.json)
+          
+          # Check if the cost data exists, otherwise default to "No changes"
+          if [ -z "$MEANINGFUL_CONTENT" ]; then
+            MEANINGFUL_CONTENT="No significant cost changes"
+          fi
+          
           echo "MEANINGFUL_COST=$MEANINGFUL_CONTENT" >> $GITHUB_ENV
           echo "Meaningful cost data extracted: $MEANINGFUL_CONTENT"
 
