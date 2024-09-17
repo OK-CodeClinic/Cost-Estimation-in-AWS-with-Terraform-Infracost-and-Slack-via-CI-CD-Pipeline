@@ -1,4 +1,4 @@
-# Cost-Estimation-in-AWS-with-Terraform-Infracost-and-Slack-via-CI-CD-Pipeline
+# Cost Estimation in AWS with Terraform Infracost and Slack via CI/CD Pipeline
 
 ## Description
 This workflow integrates Terraform infrastructure management with cost estimation using Infracost and automates notifications via Slack. It leverages GitHub Actions to streamline infrastructure-as-code (IaC) practices by running Terraform plans, validating configurations, and providing real-time cost visibility directly in a Slack channel as a message. The pipeline is designed to conditionally apply infrastructure changes based on cost thresholds, ensuring operational efficiency and cost governance in CI/CD workflows.
