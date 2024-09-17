@@ -84,11 +84,15 @@ jobs:
       - name: Run Infracost breakdown
         run: infracost breakdown --path terraform/tfplan.json --format json --out-file infracost-out.json
 
-      - name: Extract Cost Estimate
+      - name: Inspect Infracost output
+        run: cat infracost-out.json
+
+      - name: Extract Total Monthly Cost (Full Cost)
         id: extract_cost
         run: |
-          TOTAL_COST=$(cat infracost-out.json | jq -r '.projects[0].diff.totalMonthlyCost')
+          TOTAL_COST=$(cat infracost-out.json | jq -r '.projects[0].monthlyCost')
           echo "TOTAL_COST=$TOTAL_COST" >> $GITHUB_ENV
+          echo "Total monthly cost extracted: $TOTAL_COST"
 
       - name: Post Infracost result to PR
         uses: infracost/actions/comment@v1
@@ -104,5 +108,5 @@ jobs:
           payload: >-
             {
               "icon_emoji": ":rocket:",
-              "text": "Terraform plan and cost estimate complete! Check the cost estimate: ${{ env.TOTAL_COST }} per month"
+              "text": "Terraform plan and cost estimate complete! The total cost is estimated at: ${{ env.TOTAL_COST }} per month"
             }
